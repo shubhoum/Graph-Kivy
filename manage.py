@@ -1,19 +1,30 @@
-import csv
-
 from kivy.lang import Builder
 from kivymd.app import MDApp
 from kmplot.backend_kivy import FigureCanvasKivy
 import matplotlib.pyplot as plt
-from kivy.uix.button import Button
 from kivy.uix.screenmanager import Screen, ScreenManager
-import seaborn as sns
-import random
+from kivy.storage.jsonstore import JsonStore
+from kivymd.toast import toast
+import csv
 
 save_data = []
 
 database = {}
 
-def Graph(data):
+# Initializing JSON database
+store = JsonStore('database.json')
+
+store.put('points', name=[])  # to delete the json data
+
+
+def readCSV():
+    with open('data.csv', newline='') as csvfile:
+        data = csv.reader(csvfile, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
+        for row in data:
+            return row
+
+
+def BarGraph(data):
     courses = []
     for i in range(1, len(data) + 1):
         courses.append("Data {value}".format(value=str(i)))
@@ -31,62 +42,85 @@ def Graph(data):
     plt.title("Graph")
 
 
-def GenerateRandomData():
-    data = []
-    l = random.randint(5, 15)
-    for i in range(l):
-        data.append(random.randint(1, 150))
-    print("Length of data in generate ", len(data))
+def LineGraph(data):
+    signal = data
 
-    return data
+    # this will plot the signal on graph
+    plt.clf()
+
+    plt.plot(signal, color='red', linewidth=4,
+             marker='h', markerfacecolor='blue', markeredgewidth=2,
+             markersize=8, markevery=3)
+
+    # setting x label
+    plt.xlabel('Time(s)')
+
+    # setting y label
+    plt.ylabel('signal (norm)')
+    plt.grid(True, color='lightgray')
+
+
+def PostJSONData(data):
+    new_data = store.get('points')['name']
+    new_data += data
+    store.put('points', name=new_data)
+
+
+def GetJSONData():
+    if store.exists('points'):
+        return store.get('points')['name']
 
 
 class MenuScreen(Screen):
-    count = 1
-    check = False
+    check = None
 
-    def callback(self, instance):
-        self.check = True
-        print("Data received  ", save_data[database[instance.text]])
-        Graph(save_data[database[instance.text]])  # instance.text is a key
-        self.parent.current = 'graph'
+    def callback(self, instance, name):
+        if instance:
+            if name == 'line':
+                self.check = False
+            else:
+                self.check = True
 
     def on_enter(self, ):
         return None
 
-    def DisableCheck(self):
-        self.check = False
-        data = GenerateRandomData()  # Generate 10 random data range from 1 to 50
-        Graph(data)  # Plot the data
-        save_data.append(data)
-
     def on_leave(self, *args):
-        if self.check:
-            return
-        # Dont call if data is pressed
+        return None
 
-        key = "Data {value}".format(value=self.count)
-        b1 = Button(
-            text=key,
-            size=(200, 50),
-            size_hint=(None, None), )
-        b1.bind(on_press=lambda x: self.callback(b1))
-        self.ids.view.add_widget(b1)
-        database[key] = self.count - 1
-        self.count = self.count + 1
+    def ReadData(self):
+        data = readCSV()  # read data from source
+        PostJSONData(data)  # Add data to json
+        self.show_toast('Data Received')
+
+    def show_toast(self, message):
+        toast(message)
+
+    def PlotGraph(self):
+        data = GetJSONData()  # Generate 10 random data range from 1 to 50
+
+        print(self.check)
+
+        if self.check is None:
+            self.show_toast('Select Graph Type To Display')
+            return
+
+        if self.check is False:
+            LineGraph(data)
+        else:
+            BarGraph(data)
+
+        self.parent.current = "graph"
+        self.manager.transition.direction = "left"
 
 
 class GraphScreen(Screen):
 
     def on_enter(self, ):
-        self.Call()
+        self.ids.GraphBox.add_widget(FigureCanvasKivy(plt.gcf()))  # Display Graph
+        self.ids.GraphBox.add_widget(Builder.load_file('BackButton.kv'))  # Add Back Button to the graph layout
 
     def on_leave(self, *args):
         self.ids.GraphBox.clear_widgets()
-
-    def Call(self):
-        self.ids.GraphBox.add_widget(FigureCanvasKivy(plt.gcf()))  # Display Graph
-        self.ids.GraphBox.add_widget(Builder.load_file('BackButton.kv'))  # Add Back Button to the graph layout
 
 
 class WindowManager(ScreenManager):
@@ -94,10 +128,9 @@ class WindowManager(ScreenManager):
 
 
 class MainApp(MDApp):
+
     def build(self):
         return Builder.load_file('manage.kv')
 
 
 MainApp().run()
-
-# Data1 ==> save_data[0]

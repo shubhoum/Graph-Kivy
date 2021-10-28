@@ -7,30 +7,51 @@ WindowManager:
     BoxLayout:
         id : MainBox
         orientation: "vertical"
-        size: root.width, root.height
+        spacing: 50
 
-        Label:
-            text: "Graph Plot App"
-            color: '#000000'
+
+        MDToolbar:
+            right_action_items: [["dots-vertical", lambda x: app.callback()]]
+            title: 'GRAPH PLOT APP'
+            pos_hint: {'top': 1}
+
+
+        MDRoundFlatButton:
+            text: "Get Data From File"
             size: 10, 50
-            size_hint : 1,0.1
+            pos_hint: {"center_x": .5, "center_y": .5}
+            on_press: root.ReadData()
+
+        GridLayout:
+            cols:2
+
+            Label:
+                text: 'BAR GRAPH'
+                color : '#000000'
+            CheckBox:
+                color: '#000000'
+                group: 'GraphType'
+                on_active: root.callback(self.active , "bar")
+
+            Label:
+                text: 'LINE GRAPH'
+                color : '#000000'
+            CheckBox:
+                color: '#000000'
+                group: 'GraphType'
+                on_active: root.callback(self.active,'line')
 
 
-        Button:
+        MDRoundFlatButton
             id : 'btn'
-            text: "Plot Graph"
+            text: "Show Graph"
             size: 10, 50
-            size_hint : 1,0.1
-            on_press: root.DisableCheck()
-            on_release:
-                app.root.current = "graph"
-                root.manager.transition.direction = "left"
+            pos_hint: {"center_x": .5, "center_y": .5}
+            on_press: root.PlotGraph()
 
-        Label:
-            text: "Previous Data"
-            color: '#000000'
-            size: 200, 50
-            size_hint : None, None
+
+
+
         ScrollView:
             do_scroll_x : False
             do_scroll_y : True
@@ -44,8 +65,14 @@ WindowManager:
 
 <GraphScreen>:
     name : "graph"
-    BoxLayout:
-        id : GraphBox
-        orientation: "vertical"
-        size: root.width, root.height
+    ScrollView:
+        do_scroll_x : True
+        do_scroll_y : False
+        GridLayout:
+            id : GraphBox
+            cols:1
+            width: self.minimum_width
+
+
+
 
