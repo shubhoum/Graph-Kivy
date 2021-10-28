@@ -1,0 +1,51 @@
+WindowManager:
+    MenuScreen:
+    GraphScreen:
+
+<MenuScreen>:
+    name : "menu"
+    BoxLayout:
+        id : MainBox
+        orientation: "vertical"
+        size: root.width, root.height
+
+        Label:
+            text: "Graph Plot App"
+            color: '#000000'
+            size: 10, 50
+            size_hint : 1,0.1
+
+
+        Button:
+            id : 'btn'
+            text: "Plot Graph"
+            size: 10, 50
+            size_hint : 1,0.1
+            on_press: root.DisableCheck()
+            on_release:
+                app.root.current = "graph"
+                root.manager.transition.direction = "left"
+
+        Label:
+            text: "Previous Data"
+            color: '#000000'
+            size: 200, 50
+            size_hint : None, None
+        ScrollView:
+            do_scroll_x : False
+            do_scroll_y : True
+            GridLayout:
+                size: root.width, root.height
+                cols:1
+                size_hint_x:None
+                size_hint_y:None
+                height:self.minimum_height
+                id: view
+
+<GraphScreen>:
+    name : "graph"
+    BoxLayout:
+        id : GraphBox
+        orientation: "vertical"
+        size: root.width, root.height
+
