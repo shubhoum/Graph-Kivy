@@ -5,28 +5,32 @@ from kmplot.backend_kivy import FigureCanvasKivy
 import matplotlib.pyplot as plt
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivymd.toast import toast
-from firebase import firebase
 import csv
+import requests
 
 save_data = []
 manager = {}
 
 col_list = ['Frequency', 'Heat', 'Temperature', 'Percentage']
 
-database = firebase.FirebaseApplication("https://kivy-graph-default-rtdb.firebaseio.com/", authentication=None)
+url = 'https://kivy-graph-default-rtdb.firebaseio.com/.json'  # Database Url
+auth_key = 'gVSkJOjwu5y5h4Q1TRoX8xNOath4h1X0IZkdeDoJ'  # API key
 
 
 def PATCH(data):
-    database.patch('/Points',
-                   {
-                       'Frequency': data['Frequency'],
-                       'Heat': data['Heat'],
-                       'Percentage': data['Percentage'],
-                       'Temperature': data['Temperature']})
+    to_database = {
+        'Points': {
+            'Frequency': data['Frequency'],
+            'Heat': data['Heat'],
+            'Percentage': data['Percentage'],
+            'Temperature': data['Temperature']}}
+
+    requests.patch(url=url, json=to_database)
 
 
 def POST(data):
     old_data = GET()
+    print(old_data)
 
     if old_data is None:  # Initialize Firebase for first time
         PATCH(data)
@@ -42,12 +46,16 @@ def POST(data):
 
 
 def GET():
-    return database.get('/Points', None)
+    request = requests.get(url + '?auth=' + auth_key)
+    try:
+        return request.json()['Points']
+    except:
+        return None
 
 
 def readCSV():
     columns = []
-    with open('data.csv') as f:
+    with open('data/data.csv') as f:
         reader = csv.reader(f)
         for row in reader:
             if columns:
@@ -81,19 +89,19 @@ def LineGraph(data):
     # this will plot the signal on graph
     plt.clf()
 
-    plt.plot(data['Frequency'], color='red', linewidth=4,
+    plt.plot(list(map(int, data['Frequency'])), color='red', linewidth=4,
              marker='h', markerfacecolor='blue', markeredgewidth=2,
              markersize=8, markevery=3)
 
-    plt.plot(data['Heat'], color='green', linewidth=4,
+    plt.plot(list(map(int, data['Heat'])), color='green', linewidth=4,
              marker='h', markerfacecolor='blue', markeredgewidth=2,
              markersize=8, markevery=3)
 
-    plt.plot(data['Temperature'], color='yellow', linewidth=4,
+    plt.plot(list(map(int, data['Temperature'])), color='yellow', linewidth=4,
              marker='h', markerfacecolor='blue', markeredgewidth=2,
              markersize=8, markevery=3)
 
-    plt.plot(data['Percentage'], color='blue', linewidth=4,
+    plt.plot(list(map(int, data['Percentage'])), color='blue', linewidth=4,
              marker='h', markerfacecolor='blue', markeredgewidth=2,
              markersize=8, markevery=3)
 
