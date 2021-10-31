@@ -1,3 +1,5 @@
+import os
+
 from kivy.lang import Builder
 from kivymd.app import MDApp
 from kmplot.backend_kivy import FigureCanvasKivy
@@ -7,6 +9,11 @@ from kivy.uix.screenmanager import Screen, ScreenManager
 from kivymd.toast import toast
 import csv
 import requests
+from kivy.uix.filechooser import FileChooserIconLayout
+from kivy.uix.floatlayout import FloatLayout
+from kivy.factory import Factory
+from kivy.properties import ObjectProperty
+from kivy.uix.popup import Popup
 
 save_data = []
 manager = {}
@@ -30,7 +37,6 @@ def PATCH(data):
 
 def POST(data):
     old_data = GET()
-    print(data)
 
     if old_data is None:  # Initialize Firebase for first time
         PATCH(data)
@@ -53,16 +59,23 @@ def GET():
         return None
 
 
-def readCSV():
+def readCSV(file):
     columns = []
-    with open('data/data.csv') as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if columns:
-                for i, value in enumerate(row):
-                    columns[i].append(value)
-            else:
-                columns = [[value] for value in row]
+    print(file)
+
+    with open('data/data.csv') as d:
+        print(csv.reader(d))
+
+    with open(file) as f:
+        read = csv.reader(f)
+        print(read)
+
+    for row in read:
+        if columns:
+            for i, value in enumerate(row):
+                columns[i].append(value)
+        else:
+            columns = [[value] for value in row]
     as_dict = {c[0]: c[1:] for c in columns}
     return as_dict
 
@@ -113,6 +126,15 @@ def LineGraph(data):
     plt.grid(True, color='lightgray')
 
 
+class LoadDialog(FloatLayout):
+    load = ObjectProperty(None)
+    cancel = ObjectProperty(None)
+
+    def ReadData(self, stream):
+        m = MenuScreen()
+        m.ReadData(stream[0])
+
+
 class MenuScreen(Screen):
     check = None
 
@@ -129,11 +151,8 @@ class MenuScreen(Screen):
     def on_leave(self, *args):
         return None
 
-    def ReadData(self):
-        # data = readCSV()  # read data from source
-        data = {'': ['0', '1', '2', '3'], 'Frequency': ['43', '96', '456', '201'], 'Heat': ['253', '120', '45', '1'],
-                'Temperature': ['67', '9', '178', '89'], 'Percentage': ['153', '47', '56', '455']}
-
+    def ReadData(self, stream):
+        data = readCSV(stream)  # read data from source
         POST(data)  # Add data to json
         self.show_toast('Data Received')
 
@@ -156,6 +175,15 @@ class MenuScreen(Screen):
 
         self.parent.current = "graph"
         self.manager.transition.direction = "left"
+
+    def dismiss_popup(self):
+        self._popup.dismiss()
+
+    def openfile(self):
+        content = LoadDialog(cancel=self.dismiss_popup)
+        self._popup = Popup(title="Load file", content=content,
+                            size_hint=(0.9, 0.9))
+        self._popup.open()
 
 
 class GraphScreen(Screen):
